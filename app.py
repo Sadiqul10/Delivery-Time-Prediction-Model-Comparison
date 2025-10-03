@@ -32,21 +32,31 @@ TARGET = "Delivery_Time"
 
 # --- Load data (upload or local) ---
 uploaded = st.sidebar.file_uploader("Upload dataset (CSV)", type="csv")
+
+df = None
 if uploaded is not None:
+    # uploaded is a Streamlit UploadedFile (file-like). Ensure pointer at start.
     try:
+        # rewind just in case
+        uploaded.seek(0)
         df = pd.read_csv(uploaded)
+        st.sidebar.success(f"Loaded uploaded file `{getattr(uploaded, 'name', 'uploaded_csv')}`")
     except Exception as e:
         st.sidebar.error(f"Failed to read uploaded CSV: {e}")
-        st.stop()
-elif os.path.exists(DATA_FILE):
-    try:
-        df = pd.read_csv(DATA_FILE)
-    except Exception as e:
-        st.sidebar.error(f"Failed to read local `{DATA_FILE}`: {e}")
         df = None
-else:
-    st.sidebar.warning(f"No local `{DATA_FILE}` found. Please upload a CSV.")
-    df = None
+
+# If no upload or upload failed, try local file
+if df is None:
+    if os.path.exists(DATA_FILE):
+        try:
+            df = pd.read_csv(DATA_FILE)
+            st.sidebar.info(f"Loaded local dataset `{DATA_FILE}`")
+        except Exception as e:
+            st.sidebar.error(f"Failed to read local `{DATA_FILE}`: {e}")
+            df = None
+    else:
+        st.sidebar.warning(f"No local `{DATA_FILE}` found and no upload provided. Please upload a CSV.")
+        df = None
 
 if df is None:
     st.stop()
